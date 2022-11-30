@@ -22,7 +22,7 @@ pip install requests
 
 Then you can run the following command (replace with your directories) to run the program :
 ```console
-python3 ~/NodeViewer/ticker.py
+/usr/bin/python3.10 /home/clement/PycharmProjects/NodeViewer/ticker.py
 ```
 
 [Launch the script at startup](https://help.ubuntu.com/stable/ubuntu-help/startup-applications.html.en)
