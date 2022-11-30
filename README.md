@@ -19,6 +19,13 @@ First install python 3.10.0 or higher :
 sudo apt-get install python3.10
 ```
 
+Installation of libraries :
+
+```bash
+pip install pyserial
+pip install requests
+```
+
 Then you can run the following command (replace with your directories) to run the program :
 ```bash
 python3 ~/NodeViewer/__pycache__/ticker.cpython-310.pyc
