@@ -56,6 +56,6 @@ if not DEFINED IS_MINIMIZED set IS_MINIMIZED=1 && start "" /min "%~dpnx0" %* && 
 	color 0a
 	cd ..
 	cls
-	python3 C:\%USER%\NodeViewer\__pycache__\ticker.cpython-310.pyc
+	python3 C:\Users\%username%\NodeViewer\__pycache__\ticker.cpython-310.pyc
 exit
 ```
