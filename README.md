@@ -20,13 +20,15 @@ pip install pyserial
 pip install requests
 ```
 
-Then you can run the following command (replace with your directories) to run the program :
-```console
-/usr/bin/python3.10 /home/clement/PycharmProjects/NodeViewer/ticker.py
+Then create a file name `launch.sh` (replace with your directories in code) in start-up folder with contain :
+```shell
+cd ~/NodeViewer/
+/usr/bin/python3.10 ticker.py
 ```
 
 [Launch the script at startup](https://help.ubuntu.com/stable/ubuntu-help/startup-applications.html.en)
-for ubuntu.
+for ubuntu. Don't forget to allow the file to run as an application. 
+You can then type `~/Bureau/launch.sh` to call the application (replace with your directories).
 
 ## Windows Installation
 
