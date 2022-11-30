@@ -5,13 +5,6 @@
 [Download the latest version](https://github.com/Skyedge1903/NodeViewer/archive/refs/heads/main.zip)
 and then Unzip the file in the destination of your choice.
 
-## Compile you own version
-
-Run the following command in the root directory of the project:
-```console
-python -m py_compile ticker.py
-```
-
 ## Linux Installation
 
 First install python 3.10.0 or higher :
@@ -28,7 +21,7 @@ pip install requests
 
 Then you can run the following command (replace with your directories) to run the program :
 ```console
-python3 ~/NodeViewer/__pycache__/ticker.cpython-310.pyc
+python3 ~/NodeViewer/ticker.py
 ```
 
 [Launch the script at startup](https://help.ubuntu.com/stable/ubuntu-help/startup-applications.html.en)
@@ -56,6 +49,6 @@ if not DEFINED IS_MINIMIZED set IS_MINIMIZED=1 && start "" /min "%~dpnx0" %* && 
 	color 0a
 	cd ..
 	cls
-	python3 C:\Users\%username%\NodeViewer\__pycache__\ticker.cpython-310.pyc
+	python3 C:\Users\%username%\NodeViewer\ticker.py
 exit
 ```
