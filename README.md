@@ -35,3 +35,27 @@ python3 ~/NodeViewer/__pycache__/ticker.cpython-310.pyc
 for ubuntu.
 
 ## Windows Installation
+
+First install [python 3.10.0](https://apps.microsoft.com/store/detail/python-310/9PJPW5LDXLZ5?hl=en-us&gl=us)
+or higher on the Windows Store !
+
+Installation of libraries :
+
+```bash
+pip install pyserial
+pip install requests
+```
+
+Then [follow this tutorial to access the start-up folder](https://support.microsoft.com/en-us/windows/add-an-app-to-run-automatically-at-startup-in-windows-10-150da165-dcd9-7230-517b-cf3c295d89dd)
+for Windows. Then create a file name `launch.bat` (replace with your directories in code) in start-up folder with contain :
+
+```batch
+if not DEFINED IS_MINIMIZED set IS_MINIMIZED=1 && start "" /min "%~dpnx0" %* && exit
+	@echo off
+	@CD /D "%~dp0"
+	color 0a
+	cd ..
+	cls
+	python3 C:\%USER%\NodeViewer\__pycache__\ticker.cpython-310.pyc
+exit
+```
