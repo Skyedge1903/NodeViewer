@@ -9,6 +9,8 @@ import threading
 # library to detect the operating system
 import platform
 
+informations = json.load(open("configure_me.json"))["informations"]
+
 # if we are on Windows
 if platform.system() == "Windows":
     port_ = "COM"
@@ -16,17 +18,17 @@ if platform.system() == "Windows":
 else:
     port_ = "/dev/ttyUSB"
 
-address = "0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45"  # 0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45
+address = informations["address"]
 address = address[2:]
 include_address = (address != "")
 if not include_address:
     address = "d8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
-node = "412204"  # 412204
+node = informations["node"]
 include_node = (node != "")
 
-passive_token = "stETH"  # stETH
-passive_token_income = 0.054
+passive_token = informations["passive_token"]
+passive_token_income = informations["passive_token_income"]
 include_passive_token = (passive_token != "") and include_address
 
 pages = '1' if include_address else '0'
