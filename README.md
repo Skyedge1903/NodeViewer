@@ -8,26 +8,26 @@ and then Unzip the file in the destination of your choice.
 ## Compile you own version
 
 Run the following command in the root directory of the project:
-```bash
+```console
 python -m py_compile ticker.py
 ```
 
 ## Linux Installation
 
 First install python 3.10.0 or higher :
-```bash
+```console
 sudo apt-get install python3.10
 ```
 
-Installation of libraries :
+Installation of libraries (with Linux Shell) :
 
-```bash
+```console
 pip install pyserial
 pip install requests
 ```
 
 Then you can run the following command (replace with your directories) to run the program :
-```bash
+```console
 python3 ~/NodeViewer/__pycache__/ticker.cpython-310.pyc
 ```
 
@@ -39,9 +39,9 @@ for ubuntu.
 First install [python 3.10.0](https://apps.microsoft.com/store/detail/python-310/9PJPW5LDXLZ5?hl=en-us&gl=us)
 or higher on the Windows Store !
 
-Installation of libraries :
+Installation of libraries (with Powershell) :
 
-```bash
+```console
 pip install pyserial
 pip install requests
 ```
