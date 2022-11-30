@@ -48,10 +48,9 @@ for Windows. Then create a file name `launch.bat` (replace with your directories
 ```batch
 if not DEFINED IS_MINIMIZED set IS_MINIMIZED=1 && start "" /min "%~dpnx0" %* && exit
 	@echo off
-	@CD /D "%~dp0"
+	cd C:\Users\%username%\NodeViewer\
 	color 0a
-	cd ..
 	cls
-	python3 C:\Users\%username%\NodeViewer\ticker.py
+	python3 ticker.py
 exit
 ```
