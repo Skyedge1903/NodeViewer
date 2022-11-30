@@ -4,6 +4,7 @@
 
 [Download the latest version](https://github.com/Skyedge1903/NodeViewer/archive/refs/heads/main.zip)
 and then Unzip the file in the destination of your choice.
+Configure the `configure_me.json` file with your own information.
 
 ## Linux Installation
 
