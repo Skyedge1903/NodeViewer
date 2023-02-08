@@ -1,8 +1,5 @@
 {
     "informations": {
-        "address": "0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45",
-        "node": "412204",
-        "passive_token": "stETH",
-        "passive_token_income": 0.054
+        "address": "0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45"
     }
 }

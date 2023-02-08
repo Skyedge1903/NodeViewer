@@ -1,15 +1,11 @@
+# library to detect the operating system
+import platform
 # utilities library
 import serial
 import time
-import requests
-import re
-import json
 import threading
-
-# library to detect the operating system
-import platform
-
-informations = json.load(open("configure_me.json"))["informations"]
+import json
+import data_acquisition as da
 
 # if we are on Windows
 if platform.system() == "Windows":
@@ -18,22 +14,11 @@ if platform.system() == "Windows":
 else:
     port_ = "/dev/ttyUSB"
 
-address = informations["address"]
-address = address[2:]
-include_address = (address != "")
-if not include_address:
-    address = "d8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+# open the config file
+with open("configure_me.json", 'r') as json_file:
+    address = json.load(json_file)['informations']['address']
 
-node = informations["node"]
-include_node = (node != "")
-
-passive_token = informations["passive_token"]
-passive_token_income = informations["passive_token_income"]
-include_passive_token = (passive_token != "") and include_address
-
-pages = '1' if include_address else '0'
-pages += '1' if include_node else '0'
-pages += '1' if include_passive_token or include_node else '0'
+pages = '111'
 
 
 # function how to clean the return of the serial port
@@ -106,77 +91,30 @@ def replace(text, correspondence):
 
 
 def createType1():
-    node_value = 0.0
-    if include_node:
-        page = get_page("https://beaconcha.in/validator/" + node)
-        balance = re.search(r'<span .*>[0-9]+.[0-9][0-9][0-9][0-9][0-9] ETH</span>', page).group(0)
-        balance = re.search(r'[0-9]+\.[0-9][0-9][0-9][0-9][0-9]', balance).group(0)
-        node_value = balance
-    page = get_page("https://etherchain.org/account/" + address + "#overview")
-    values = list(re.finditer(r'[A-Za-z :]*\$[0-9,]+.[0-9]+', page))
-    # we get the list of matches
-    values = [x.group(0) for x in values]
-    eth_price = values[1]
-    for i in reversed(range(len(values))):
-        if " " in values[i]:
-            values.pop(i)
-    # we keep only the 4 largest values
-    eth = values.pop(0)
-
-    tokens = list(re.finditer(r'<a href="/token/0x[A-Za-z0-9]+">[A-Za-z]+</a></td>', page))
-    tokens = [x.group(0) for x in tokens]
-    # only the name of the token between > and < is retrieved.
-    tokens = [re.search(r'>[A-Za-z]+<', x).group(0) for x in tokens]
-    # we remove the > and <
-    tokens = [replace(x, {">": "", "<": ""}) for x in tokens]
-    if include_node:
-        # tokens are sorted according to their value
-        tokens = sorted(tokens, key=lambda x: float(replace(values[tokens.index(x)], {"$": "", ",": ""})),
-                        reverse=True)[:3]
-        values = sorted(values, key=lambda x: float(replace(x, {"$": "", ",": ""})), reverse=True)[:3]
-
-    else:
-        # tokens are sorted according to their value
-        tokens = sorted(tokens, key=lambda x: float(replace(values[tokens.index(x)], {"$": "", ",": ""})),
-                        reverse=True)[:4]
-        values = sorted(values, key=lambda x: float(replace(x, {"$": "", ",": ""})), reverse=True)[:4]
-    # we put back in string
-    values = [str(x) for x in values]
-    values.insert(0, eth)
-    tokens.insert(0, "ETH")
-    if include_node:
-        tokens.append("NODE")
-        values.append(str(float(node_value) * float(replace(eth_price, {"$": "", ",": "", " ": ""}))))
-
-    total = sum([float(replace(x, {"$": "", ",": ""})) for x in values])
-    element = len(tokens)
-    lbl = tokens
-    # we transform the values into int to send them to the display
-    chi = [int(float(replace(x, {"$": "", ",": ""})) * 360 / total) for x in values]
+    wallet_info = da.get_wallet_info(address)
+    total_value = [('TOTAL', sum([float(i[1]) * float(i[2]) for i in wallet_info]))]
+    lbl = [i[0] for i in wallet_info]
+    # nos chiffres sont trop grands on les rapoorte à 360°
+    chi = [round((float(i[1]) * float(i[2])) / total_value[0][1] * 360, 2) for i in wallet_info]
 
     # adds a space every 3 digits
-    total = int(total)
-    total = "{:,}".format(int(total)).replace(",", " ") + " USDC"
+    total = "{:,}".format(int(total_value[0][1])).replace(",", " ") + " USDC"
     total = (" " * (19 - len(total))) + total + "_"
-    element = str(element) + "_"
+    element = str(len(wallet_info)) + "_"
     lbl = "_".join(lbl) + "_"
     chi = "_".join([str(x) for x in chi]) + "_#"
     return "1" + total + element + lbl + chi
 
 
 def createType2():
-    page = get_page("https://beaconcha.in/validator/" + node)
-    validator = node
-    rank1 = re.search(r'Rank [0-9]+\.*[0-9]* %', page).group(0)
-    rank2 = re.search(r'<span id="validatorRank" .*>[0-9]+</span>', page).group(0)
-    rank2 = rank2.replace(re.search(r'[0-9]+', rank2).group(0) + "px", "")
-    rank2 = re.search(r'[0-9]+', rank2).group(0)
-    status1 = re.search(r'<b>[A-Za-z]+</b> <i class="fas fa-power-off fa-sm text-success"></i>', page).group(0)
-    status1 = "Active" if "Active" in status1 else "Inactive"
-    efficiency = re.search(r'[0-9]+% - [A-Za-z]+', page).group(0)
+    stats = da.get_node_rank(address)
+    validator = stats[0][1]
+    rank1 = 'Rank ' + str(int((stats[1][1]/513884)*1000)/10) + "%"
+    rank2 = stats[1][1]
+    status1 = stats[3][1]
+    efficiency = stats[4][1]
     status2 = 1 if status1 == "Active" else 0
-    balance = re.search(r'<span .*>[0-9]+.[0-9][0-9][0-9][0-9][0-9] ETH</span>', page).group(0)
-    balance = re.search(r'[0-9]+\.[0-9][0-9][0-9][0-9][0-9]', balance).group(0)
+    balance = stats[2][1]
     validator = "Validator " + str(validator) + "_"
     rank1 = str(rank1)
     rank1 = rank1 + (" " * (17 - len(rank1))) + "Balance" + "_"
@@ -188,68 +126,33 @@ def createType2():
 
 
 def createType3():
-    steth = 0.0
-    if include_passive_token:
-        page = get_page("https://etherchain.org/account/" + address + "#overview")
-        values = list(re.finditer(r'[A-Za-z :]*\$[0-9,]+.[0-9]+', page))
-        # we get the list of matches
-        values = [x.group(0) for x in values]
-        for i in reversed(range(len(values))):
-            if " " in values[i]:
-                values.pop(i)
+    apr = da.get_steth_return(address)
 
-        tokens = list(re.finditer(r'<a href="/token/0x[A-Za-z0-9]+">[A-Za-z]+</a></td>', page))
-        tokens = [x.group(0) for x in tokens]
-        # only the name of the token between > and < is retrieved.
-        tokens = [re.search(r'>[A-Za-z]+<', x).group(0) for x in tokens]
-        # we remove the > and <
-        tokens = [replace(x, {">": "", "<": ""}) for x in tokens]
-        tokens.insert(0, "ETH")
-        steth = 0
-        for i in range(len(tokens)):
-            if tokens[i] == "stETH":
-                steth = (float(replace(values[i], {"$": "", ",": ""})) * passive_token_income) / 365
-                break
-    incomes = ["0.0", "0.0", "0.0"]
-    page = get_page("https://etherchain.org/account/" + address + "#overview")
-    values = list(re.finditer(r'[A-Za-z :]*\$[0-9,]+.[0-9]+', page))
-    # we get the list of matches
-    values = [x.group(0) for x in values]
-    eth_price = values[1]
-    if include_node:
-        page = get_page("https://beaconcha.in/validator/" + node)
-        incomes = list(re.finditer(r'\+[0-9,]+\.[0-9]+ ETH', page))
-        incomes = [x.group(0) for x in incomes]
+    day_eth = apr[0][1]
+    # we count the number of digits before the decimal point
+    nb = len(str(int(day_eth)))
+    # we keep 6 - nb digits after the decimal point
+    day_eth = '+' + str(round(day_eth, 6 - nb)) + " ETH"
 
-    eth_price = float(replace(eth_price, {"$": "", ",": "", " ": ""}))
-    for i in range(len(incomes)):
-        incomes[i] = float(replace(incomes[i], {"+": "", "ETH": "", " ": ""}))
+    day_usdc = apr[0][2]
+    nb = len(str(int(day_usdc)))
+    day_usdc = str(round(day_usdc, 6 - nb)) + " USDC"
 
-    day_eth = incomes[0] + (steth / eth_price)
-    day_eth = "+" + str(day_eth).split(".")[0] + '.' + str(day_eth).split(".")[1][:5] + " ETH"
+    month_eth = apr[1][1]
+    nb = len(str(int(month_eth)))
+    month_eth = '+' + str(round(month_eth, 6 - nb)) + " ETH"
 
-    day_usdc = incomes[0] * eth_price
-    day_usdc += steth
+    month_usdc = apr[1][2]
+    nb = len(str(int(month_usdc)))
+    month_usdc = str(round(month_usdc, 6 - nb)) + " USDC"
 
-    month_eth = incomes[2] + ((steth * 30) / eth_price)
-    month_eth = "+" + str(month_eth).split(".")[0] + '.' + str(month_eth).split(".")[1][:5] + " ETH"
-
-    month_usdc = incomes[2] * eth_price
-    month_usdc += steth * 30
-
-    tab_income = [0 for _ in range(28)]
-    if include_node:
-        page = get_page("https://beaconcha.in/api/v1/validator/stats/" + node)
-        page = json.loads(page)
-        data = page["data"]
-        # we only keep the last 28 days
-        data = data[:28]
-        variation = [x["end_balance"] - x["start_balance"] for x in reversed(data)]
-        max_ = max(variation)
-        amplification_factor = 10
-        tab_income = [int((x / max_) * 70 * amplification_factor) - 70 * (amplification_factor - 1) for x in variation]
-        # if there are negative values, we transform them into 0.
-        tab_income = [0 if x < 0 else x for x in tab_income]
+    barres = da.get_node_list_all(address)
+    variation = [float(i) for i in barres]
+    max_ = max(variation)
+    amplification_factor = 1
+    tab_income = [int((x / max_) * 70 * amplification_factor) - 70 * (amplification_factor - 1) for x in variation]
+    # if there are negative values, we transform them into 0.
+    tab_income = [0 if x < 0 else x for x in tab_income]
 
     day_eth = " " * (21 - len(day_eth)) + day_eth + "_"
     day_usdc = "+" + str(day_usdc).split('.')[0] + '.' + str(day_usdc).split('.')[1][:2] + " USDC"
@@ -260,14 +163,6 @@ def createType3():
     tab_income = "_".join([str(x) for x in tab_income]) + "_#"
 
     return "3" + day_eth + day_usdc + month_eth + month_usdc + tab_income
-
-
-# function that retrieves the content of a web page
-def get_page(url):
-    # we get the content of the page
-    page = requests.get(url).text
-    # we return the content
-    return page
 
 
 if __name__ == '__main__':
