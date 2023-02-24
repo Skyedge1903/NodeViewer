@@ -109,7 +109,8 @@ def createType1():
 def createType2():
     stats = da.get_node_rank(address)
     validator = stats[0][1]
-    rank1 = 'Rank ' + str(int((stats[1][1]/513884)*1000)/10) + "%"
+    validator_count = da.get_total_node()
+    rank1 = 'Rank ' + str(int((stats[1][1]/validator_count)*1000)/10) + "%"
     rank2 = stats[1][1]
     status1 = stats[3][1]
     efficiency = stats[4][1]

@@ -138,6 +138,14 @@ def get_node_rank(wallet_address):
             ('EFFECTIVENESS', data2)]
 
 
+# get the total number of ethereum nodes
+def get_total_node():
+    url = "https://beaconcha.in/api/v1/epoch/latest"
+    response = requests.get(url)
+    data = json.loads(response.text)
+    return data['data']['validatorscount']
+
+
 '''
 adress = '0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45'
 
