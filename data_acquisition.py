@@ -19,7 +19,8 @@ def get_wallet_info(wallet_address):
                 result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
             elif token['tokenInfo']['symbol'] == 'USDC':
                 bal = token['balance'] / 1000000
-                result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
+                if bal > 1:
+                    result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
             elif token['tokenInfo']['symbol'] == 'PAXG':
                 bal = token['balance'] / 1000000000000000000
                 result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
