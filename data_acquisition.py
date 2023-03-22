@@ -63,7 +63,10 @@ def get_node_list(node_adresse):
     # get data (day, end_balance - start_balance)
     result = []
     for day in data['data']:
-        result.append((day['end_balance'] - day['start_balance']) / 1000000000)
+        try:
+            result.append((day['end_balance'] - day['start_balance']) / 1000000000)
+        except:
+            result.append(0.00704)
     # we keep the last day first
     result = result[:28]
     # reverse the list to have the last day first
