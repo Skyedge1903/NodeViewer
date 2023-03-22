@@ -20,6 +20,9 @@ def get_wallet_info(wallet_address):
             elif token['tokenInfo']['symbol'] == 'USDC':
                 bal = token['balance'] / 1000000
                 result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
+            elif token['tokenInfo']['symbol'] == 'PAXG':
+                bal = token['balance'] / 1000000000000000000
+                result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
             else:
                 result.append((token['tokenInfo']['symbol'], token['balance'], token['tokenInfo']['price']['rate']))
     # check if the wallet is linked to nodes and add sum of the nodes
