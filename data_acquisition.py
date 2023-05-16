@@ -106,7 +106,7 @@ def get_steth_return(wallet_address):
     response = requests.get(url)
     data = response.text
     # the data-testid="ethereum-card" div
-    data = re.findall(r'<div data-testid="ethereum-card".*?</div>', data, re.DOTALL)[0]
+    data = re.findall(r'<div .* data-testid="ethereum-card".*?</div>', data, re.DOTALL)[0]
     # get 4.9% [0-9]+.[0-9]+%
     apr = float(re.findall(r'([0-9]+.[0-9]+)%', data)[0])
     day_return = (1 + apr / 100) ** (1 / 365) - 1
