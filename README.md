@@ -60,7 +60,7 @@ exit
 Using the Arduino software, compile and upload the code found in Arduino Sketch/NodeViewer/.
 Connect the Arduino to the computer via USB and make sure that the script above is running. If necessary, restart it.
 
-![Node Viewer 4 pages](Pictures/1 - Final.png)
+![Node Viewer 4 pages](Pictures/1 - Final.png).
 The display is the ILI9341.
 
-![Node Viewer 4 pages](Pictures/3 - Présentation.png)
+![Node Viewer 4 pages](Pictures/3 - Présentation.png).
