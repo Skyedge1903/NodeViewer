@@ -5,7 +5,7 @@ import serial
 import time
 import threading
 import json
-import data_acquisition as da
+import data_acquisition_2026 as da
 
 # if we are on Windows
 if platform.system() == "Windows":
