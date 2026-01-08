@@ -60,7 +60,17 @@ exit
 Using the Arduino software, compile and upload the code found in Arduino Sketch/NodeViewer/.
 Connect the Arduino to the computer via USB and make sure that the script above is running. If necessary, restart it.
 
-![Node Viewer 4 pages](Pictures/1_Final.png).
+![Node Viewer 4 pages](Pictures/1_Final.png)
 The display is the ILI9341.
 
-![Node Viewer 4 pages](Pictures/3_Présentation.png).
+![Node Viewer 4 pages](Pictures/3_Présentation.png)
+
+# Web version
+
+UPDATE [beacoin](https://beaconcha.in/) launch 2 dashboards :
+
+Validator dashboard [->](https://beaconcha.in/validator/412204)
+[https://beaconcha.in/validator/412204](https://beaconcha.in/validator/412204)
+Multiple Validator dashboard [->](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
+[https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
+
