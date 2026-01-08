@@ -70,5 +70,7 @@ The display is the ILI9341.
 UPDATE [beacoin](https://beaconcha.in/) launch 2 dashboards :
 
 Validator dashboard [->](https://beaconcha.in/validator/412204)
+[https://beaconcha.in/validator/412204](https://beaconcha.in/validator/412204)
 Multiple Validator dashboard [->](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
+[https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
 
