@@ -1,7 +1,7 @@
 {
   "informations": {
     "address": "0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45",
-    "staking_apr": 0.026,
+    "staking_apr": 0.029,
     "assets": {
       "USDC": {
         "balance": 36000,
