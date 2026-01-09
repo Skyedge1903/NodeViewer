@@ -1,174 +1,182 @@
 import requests
-import json
-import re
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
+class EthereumDataFetcher:
+    STAKING_APR = 0.026  # 2.6% annual fixed
 
-# this function returns a list of tuples (crypto_name, amount, price)
-def get_wallet_info(wallet_address):
-    url = "https://api.ethplorer.io/getAddressInfo/{}?apiKey=freekey".format(wallet_address)
-    response = requests.get(url)
-    data = json.loads(response.text)
-    if data['ETH']['balance'] != 0:
-        result = [('ETH', data['ETH']['balance'], data['ETH']['price']['rate'])]
-    else:
-        result = []
-    for token in data['tokens']:
-        if token['tokenInfo']['price']:
-            if token['tokenInfo']['symbol'] == 'STETH':
-                bal = token['balance'] / 1000000000000000000
-                result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
-            elif token['tokenInfo']['symbol'] == 'USDC':
-                bal = token['balance'] / 1000000
-                if bal > 1:
-                    result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
-            elif token['tokenInfo']['symbol'] == 'PAXG':
-                bal = token['balance'] / 1000000000000000000
-                result.append((token['tokenInfo']['symbol'], bal, token['tokenInfo']['price']['rate']))
+    ASSETS = {
+        'USDC': {'balance': 36000, 'price': 1},
+        'STETH': {'balance': 2.6}
+    }
+
+    DEFAULT_HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json,text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://beaconcha.in/",
+        "Connection": "keep-alive",
+    }
+
+    def __init__(self, address):
+        self.address = address
+        self.session = self._create_session()
+
+    def _create_session(self):
+        session = requests.Session()
+        session.headers.update(self.DEFAULT_HEADERS)
+        retries = Retry(
+            total=5,
+            backoff_factor=1.2,
+            status_forcelist=[403, 429, 500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        return session
+
+    def _safe_get(self, url, expect_json=True):
+        resp = self.session.get(url, timeout=15)
+        resp.raise_for_status()
+        return resp.json() if expect_json else resp.text
+
+    def get_wallet_info(self):
+        url = f"https://api.ethplorer.io/getAddressInfo/{self.address}?apiKey=freekey"
+        data = self._safe_get(url)
+        result = [('USDC', self.ASSETS['USDC']['balance'], 1)]  # Manual USDC
+
+        # ETH
+        eth = data.get('ETH', {})
+        if eth.get('balance', 0) > 0 and eth.get('price'):
+            result.append(('ETH', eth['balance'], eth['price']['rate']))
+
+        # Tokens
+        for token in data.get('tokens', []):
+            info = token.get('tokenInfo', {})
+            if not info.get('price'):
+                continue
+            symbol = info.get('symbol')
+            decimals = int(info.get('decimals', 18))
+            balance = token['balance'] / (10 ** decimals)
+            price = info['price']['rate']
+            if symbol == 'STETH':
+                balance = self.ASSETS['STETH']['balance']
+            result.append((symbol, balance, price))
+
+        # Node
+        node = self.get_node()[0]
+        node_info = self.get_node_info(node)
+        if node_info:
+            result.insert(0, node_info[0])
+
+        return result
+
+    def get_node_info(self, validator_index):
+        data = self._safe_get(f"https://beaconcha.in/api/v1/validator/{validator_index}")
+        eth_price = self._safe_get("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD")["USD"]
+        balance_eth = data['data']['balance'] / 1e9
+        return [("NODE", balance_eth, eth_price)]
+
+    def get_node_list(self, validator_index):
+        data = self._safe_get(f"https://beaconcha.in/api/v1/validator/stats/{validator_index}")
+        profits = []
+        for day in data['data'][:28]:
+            try:
+                profits.append((day['end_balance'] - day['start_balance']) / 1e9)
+            except Exception:
+                profits.append(0.00704)
+        profits.reverse()
+        return profits
+
+    def get_node(self):
+        data = self._safe_get(f"https://beaconcha.in/api/v1/validator/eth1/{self.address}")
+        return [i['validatorindex'] for i in data['data']]
+
+    def get_node_list_all(self):
+        nodes = self.get_node()
+        aggregated = []
+        for node in nodes:
+            daily = self.get_node_list(node)
+            if not aggregated:
+                aggregated = daily
             else:
-                result.append((token['tokenInfo']['symbol'], token['balance'], token['tokenInfo']['price']['rate']))
-    # check if the wallet is linked to nodes and add sum of the nodes
-    node_list = get_node(wallet_address)
-    if len(node_list) != 0:
-        node_info = []
-        for node in node_list:
-            node_info += get_node_info(node)
-        for i in node_info:
-            if i[0] in [j[0] for j in result]:
-                index = [j[0] for j in result].index(i[0])
-                result[index] = (result[index][0], result[index][1] + i[1], result[index][2])
-            else:
-                # add in first position
-                result.insert(0, i)
-    return result
+                aggregated = [a + b for a, b in zip(aggregated, daily)]
+        return aggregated
 
+    def get_steth_return(self):
+        wallet = self.get_wallet_info()
+        staking_assets = [i for i in wallet if i[0] in ('STETH', 'NODE')]
+        if not staking_assets:
+            return [('DAY', 0, 0), ('MONTH', 0, 0)]
 
-# this function return a tuple (crypto_in_node, crypto_value_in_node)
-def get_node_info(node_adresse):
-    # get info of the node from the api beaconcha.in
-    url = "https://beaconcha.in/api/v1/validator/{}".format(node_adresse)
-    response = requests.get(url)
-    data = json.loads(response.text)
-    # get the eth value in usd
-    url = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=ETH,USD"
-    response = requests.get(url)
-    eth_price = json.loads(response.text)['USD']
-    return [("NODE", data['data']['balance'] / 1000000000, eth_price)]
+        day_rate = (1 + self.STAKING_APR) ** (1 / 365) - 1
+        month_rate = (1 + self.STAKING_APR) ** (1 / 12) - 1
 
+        total_eth = sum(balance for _, balance, _ in staking_assets)
+        eth_price = staking_assets[0][2]
 
-# get 28 last days profits of the node day by day
-def get_node_list(node_adresse):
-    url = "https://beaconcha.in/api/v1/validator/stats/{}".format(node_adresse)
-    response = requests.get(url)
-    data = json.loads(response.text)
-    # get data (day, end_balance - start_balance)
-    result = []
-    for day in data['data']:
-        try:
-            result.append((day['end_balance'] - day['start_balance']) / 1000000000)
-        except:
-            result.append(0.00704)
-    # we keep the last day first
-    result = result[:28]
-    # reverse the list to have the last day first
-    result.reverse()
-    return result
+        day_eth = total_eth * day_rate
+        month_eth = total_eth * month_rate
 
+        return [
+            ('DAY', day_eth, day_eth * eth_price),
+            ('MONTH', month_eth, month_eth * eth_price)
+        ]
 
-# get the nodes linked to the wallet
-def get_node(wallet_address):
-    url = "https://beaconcha.in/api/v1/validator/eth1/{}".format(wallet_address)
-    response = requests.get(url)
-    data = json.loads(response.text)
-    return [i['validatorindex'] for i in data['data']]
+    def get_node_rank(self):
+        nodes = self.get_node()
+        if not nodes:
+            return [
+                ('VALIDATOR', 'No node'),
+                ('RANK', 'No node'),
+                ('BALANCE', 'No node'),
+                ('STATUS', 'No node'),
+                ('EFFECTIVENESS', 'No node')
+            ]
 
+        validator = nodes[0]
+        perf = self._safe_get(f"https://beaconcha.in/api/v1/validator/{validator}/performance")
+        eff = self._safe_get(f"https://beaconcha.in/api/v1/validator/{validator}/attestationefficiency")
 
-# get the 28 last days cumulated profits of all nodes linked to the wallet
-def get_node_list_all(wallet_address):
-    node_list = get_node(wallet_address)
-    result = []
-    for node in node_list:
-        node_info = get_node_list(node)
-        if len(result) == 0:
-            result = node_info
-        else:
-            for i in range(len(result)):
-                result[i] += node_info[i]
-    return result
+        efficiency = min(100, round(eff['data'][0]['attestation_efficiency'] * 100, 2))
+        label = "Perfect" if efficiency > 99 else "Good" if efficiency > 95 else "Bad"
 
+        return [
+            ('VALIDATOR', validator),
+            ('RANK', perf['data'][0]['rank7d']),
+            ('BALANCE', perf['data'][0]['balance'] / 1e9),
+            ('STATUS', 'Active' if perf['status'] == 'OK' else 'Inactive'),
+            ('EFFECTIVENESS', f"{efficiency}% - {label}")
+        ]
 
-# get the lido apr for STETH
-def get_steth_return(wallet_address):
-    wallet = get_wallet_info(wallet_address)
-    # si il n'y a pas de steth ni de node on retourne 0
-    if len([i for i in wallet if i[0] in ['STETH', 'NODE']]) == 0:
-        return [('DAY', 0, 0), ('MONTH', 0, 0)]
-    url = "https://lido.fi/"
-    response = requests.get(url)
-    data = response.text
-    # the data-testid="ethereum-card" div
-    data = re.findall(r'<div .* data-testid="ethereum-card".*?</div>', data, re.DOTALL)[0]
-    # get 4.9% [0-9]+.[0-9]+%
-    apr = float(re.findall(r'([0-9]+.[0-9]+)%', data)[0])
-    day_return = (1 + apr / 100) ** (1 / 365) - 1
-    month_return = (1 + apr / 100) ** (1 / 12) - 1
-    # we get the day return for steth and NODE
-    day_return_total_in_eth = sum([i[1] * day_return for i in wallet if i[0] in ['STETH', 'NODE']])
-    # get the eth price from steth or node
-    day_return_total_in_usd = day_return_total_in_eth * float([i[2] for i in wallet if i[0] in ['STETH', 'NODE']][0])
-    month_return_total_in_eth = sum([i[1] * month_return for i in wallet if i[0] in ['STETH', 'NODE']])
-    month_return_total_in_usd = month_return_total_in_eth * float(
-        [i[2] for i in wallet if i[0] in ['STETH', 'NODE']][0])
-    return [('DAY', day_return_total_in_eth, day_return_total_in_usd),
-            ('MONTH', month_return_total_in_eth, month_return_total_in_usd)]
+    def get_total_node(self):
+        data = self._safe_get("https://beaconcha.in/api/v1/epoch/latest")
+        return data['data']['validatorscount']
 
+if __name__ == '__main__':
 
-# get the rank, the balance, the status and effectiveness of the node
-def get_node_rank(wallet_address):
-    node_adresse = get_node(wallet_address)
-    if len(node_adresse) == 0:
-        return [('VALIDATOR', 'No node'), ('RANK', 'No node'), ('BALANCE', 'No node'), ('STATUS', 'No node'),
-                ('EFFECTIVENESS', 'No node')]
-    node_adresse = node_adresse[0]
-    url = "https://beaconcha.in/api/v1/validator/{}/performance".format(node_adresse)
-    response = requests.get(url)
-    data = json.loads(response.text)
-    url = "https://beaconcha.in/api/v1/validator/{}/attestationefficiency".format(node_adresse)
-    response = requests.get(url)
-    data2 = json.loads(response.text)
-    data2 = data2['data'][0]['attestation_efficiency'] * 100
-    data2 = data2 if data2 < 100 else 100
-    data2 = str(round(data2, 2)) + '% - Perfect' if data2 > 99 else '% - Good' if data2 > 95 else '% - Bad'
-    return [('VALIDATOR', node_adresse),
-            ('RANK', data['data'][0]['rank7d']),
-            ('BALANCE', data['data'][0]['balance'] / 1000000000),
-            ('STATUS', 'Active' if data['status'] == 'OK' else 'Inactive'),
-            ('EFFECTIVENESS', data2)]
+    '''
+    address = '0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45'
+    fetcher = EthereumDataFetcher(address)
 
+    # Page 1
+    wallet_info = fetcher.get_wallet_info()
+    print(wallet_info)
+    total_value = [('TOTAL', sum(float(i[1]) * float(i[2]) for i in wallet_info))]
+    print(total_value)
 
-# get the total number of ethereum nodes
-def get_total_node():
-    url = "https://beaconcha.in/api/v1/epoch/latest"
-    response = requests.get(url)
-    data = json.loads(response.text)
-    return data['data']['validatorscount']
+    # Page 2
+    stats = fetcher.get_node_rank()
+    print(stats)
 
-
-'''
-adress = '0x6cfa4a52a6718a0b721f5816bef04f9c3ce36c45'
-
-# Page 1
-wallet_info = get_wallet_info(adress)
-print(wallet_info)
-total_value = [('TOTAL', sum([float(i[1]) * float(i[2]) for i in wallet_info]))]
-print(total_value)
-
-# Page 2
-stats = get_node_rank(adress)
-print(stats)
-
-# Page 3
-apr = get_steth_return(adress)
-print(apr)
-barres = get_node_list_all(adress)
-print(barres)
-'''
+    # Page 3
+    apr = fetcher.get_steth_return()
+    print(apr)
+    barres = fetcher.get_node_list_all()
+    print(barres)
+    '''
