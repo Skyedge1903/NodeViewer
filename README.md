@@ -65,12 +65,8 @@ The display is the ILI9341.
 
 ![Node Viewer 4 pages](Pictures/3_Présentation.png)
 
-# Web version
+# Web version example
 
-UPDATE [beacoin](https://beaconcha.in/) launch 2 dashboards :
-
-Validator dashboard [->](https://beaconcha.in/validator/412204)
-[https://beaconcha.in/validator/412204](https://beaconcha.in/validator/412204)
-Multiple Validator dashboard [->](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
-[https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA](https://beaconcha.in/dashboard/NDEyMjA0LDIwOTg0NTEsMjE1MjcyNA)
+Validator dashboard [->](https://node.518.fr/) 
+[https://node.518.fr/](https://node.518.fr/)
 
