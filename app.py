@@ -2,8 +2,11 @@ from flask import Flask, render_template, jsonify
 import json
 from data import EthereumDataFetcher
 from datetime import datetime
+import os
 
 app = Flask(__name__, template_folder='templates')
+server = app
+
 
 with open('configure_me.json', 'r') as f:
     config = json.load(f)['informations']
@@ -102,5 +105,5 @@ def favicon():
     return app.send_static_file('favicon.ico')
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8050)))
