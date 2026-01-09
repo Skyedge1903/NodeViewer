@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loading Ethereum Data</title>
+<style>
+body { margin:0; background:#000; overflow:hidden; }
+#loader { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+#logoCanvas { max-width:90vw; max-height:70vh; }
+h3 { color:#fff; margin-top:2rem; font-family:'Courier New', monospace; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+    <canvas id="logoCanvas"></canvas>
+    <h3>Fetching Ethereum data...</h3>
+</div>
+
+<script>
+const canvas = document.getElementById('logoCanvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas(){ canvas.width = canvas.clientWidth*devicePixelRatio; canvas.height = canvas.clientHeight*devicePixelRatio; }
+resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+
+let angle=0; const DEG2RAD=Math.PI/180;
+function fillTriangle(x1,y1,x2,y2,x3,y3,color){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); }
+function tftToRGB(color565){ const r=((color565>>11)&0x1F)*255/31; const g=((color565>>5)&0x3F)*255/63; const b=(color565&0x1F)*255/31; return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`; }
+function drawLogo(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height); const scale=Math.min(canvas.width/320,canvas.height/240); ctx.save(); ctx.translate(canvas.width/2,canvas.height/2); ctx.rotate(angle*DEG2RAD); ctx.scale(scale,scale); ctx.translate(-160,-120); fillTriangle(160,0,160,170,232,124,tftToRGB(0xF800)); fillTriangle(172,150,172,40,218,120,tftToRGB(0xFFFF)); fillTriangle(160,0,160,170,89,124,tftToRGB(0xFFE0)); fillTriangle(150,39,150,150,103,119,tftToRGB(0xFFFF)); fillTriangle(89,136,160,240,160,182,tftToRGB(0x07FF)); fillTriangle(150,206,150,186,127,172,tftToRGB(0xFFFF)); fillTriangle(231,136,160,240,160,182,tftToRGB(0x001F)); fillTriangle(171,206,171,186,193,172,tftToRGB(0xFFFF)); ctx.restore(); }
+function animate(){ drawLogo(); angle+=0.5; requestAnimationFrame(animate); }
+animate();
+
+// Appelle l'API fetch_data et redirige vers /dashboard quand prêt
+function loadData(){
+    fetch('/fetch_data')
+    .then(res=>res.json())
+    .then(d=>{
+        if(d.ready){
+            window.location.href='/dashboard';
+        } else if(d.error){
+            document.querySelector('h3').textContent='Error: '+d.error;
+        } else {
+            setTimeout(loadData,1500);
+        }
+    })
+    .catch(()=>setTimeout(loadData,2000));
+}
+setTimeout(loadData,500);
+</script>
+</body>
+</html>
